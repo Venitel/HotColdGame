@@ -1,5 +1,5 @@
 # HotColdGame – C++ Number Guessing Game
-A simple CLI game written in C++11.  Player guesses the number and receives a feedback (cold, hot, hotter) based on a configurable [section.cfg](section.cfg) file (details and how-to inside the file).
+A simple CLI game written in C++11.  Player guesses the number and receives a feedback (cold, hot, hotter) based on a configurable [sections.cfg](sections.cfg) file (details and how-to inside the file).
 
 This project has been made purely for fun and practice and is probably slightly overengineered for the basic gameplay it provides.
 
