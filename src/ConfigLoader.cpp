@@ -7,17 +7,52 @@
 #include <stdexcept>
 #include <algorithm>
 
-const std::string configFileName = "sections.cfg";
-const std::string hierarchyTitle = ">> Hierarchy <<";
-const std::string hierarchyPrefix = "* ";
-const char lineSymbol = '-';
-
-std::vector<Section> initSections()
+namespace
 {
-  std::vector<Section> allSections = readSectionsFromConfig();
+  constexpr char SECTIONS_FILE[] = "sections.cfg";
+  constexpr char HIERARCHY_FILE[] = "hierarchy.cfg";
+}
+
+const std::vector<Section>& getSectionsConfig()
+{
+    static const std::vector<Section> sectionsConfig = initSections(std::string(SECTIONS_FILE));
+    return sectionsConfig;
+}
+
+const HierarchyParameters& getHierarchyConfig()
+{
+    static const HierarchyParameters hierarchyConfig = readHierarchyConfig(std::string(HIERARCHY_FILE));
+    return hierarchyConfig;
+}
+
+bool isChar(const std::string& value)
+{
+  return value.length() == 1;
+}
+
+void doForEachFileLine(const std::string& fileName, const std::function<void(const std::string&)>& callback)
+{
+    std::ifstream file(fileName);
+    if(!file.is_open())
+    {
+      throw std::runtime_error("Failed to open file: " + fileName);    
+    }
+
+    std::string fileLine;
+    while(std::getline(file, fileLine))
+    {
+      if(fileLine.empty() || fileLine[0] == '#') continue;
+
+      callback(fileLine);
+    }
+}
+
+std::vector<Section> initSections(const std::string& fileName)
+{
+  std::vector<Section> allSections = readSectionsFromConfig(fileName);
   if(allSections.empty())
   {
-    throw std::runtime_error("No viable sections loaded from " + configFileName);    
+    throw std::runtime_error("No viable sections loaded from " + fileName);    
   }
   //sort sections ascending (by %)
   sort(allSections.begin(), allSections.end());
@@ -31,42 +66,34 @@ std::vector<Section> initSections()
   return allSections;
 }
 
-std::vector<Section> readSectionsFromConfig()
+std::vector<Section> readSectionsFromConfig(const std::string& fileName)
 {
   std::vector<Section> sections;
-  std::ifstream file(configFileName);
-  if(!file.is_open())
-  {
-    throw std::runtime_error("Failed to open config file: " + configFileName);    
-  }
-
-  std::string fileLine;
-  while(getline(file, fileLine))
-  {
-    if(fileLine.empty() || fileLine[0] == '#') continue;
-
-    ParseResult<Section> configParse = parseConfigLine(fileLine);
+ 
+  doForEachFileLine(fileName, [&](const std::string& fileLine) {
+    //lambda
+    ParseResult<Section> configParse = parseSectionConfigLine(fileLine);
     if(!configParse.success)
     {
       std::cerr << "Config '" << fileLine << "' ignored. " << configParse.error << "\n";
-      continue;
+      return;
     }
 
     sections.push_back(configParse.value);
-  }
+  });
 
   return sections;
 }
 
-ParseResult<Section> parseConfigLine(const std::string& configLine)
+ParseResult<Section> parseSectionConfigLine(const std::string& configLine)
 {
   std::stringstream stream(configLine);
   std::string textConfig, amplifiedTextConfig, percentConfig, ampDirectionConfig;
 
-  if(!getline(stream, textConfig, '|')
-    || !getline(stream, amplifiedTextConfig, '|')
-    || !getline(stream, percentConfig, '|')
-    || !getline(stream, ampDirectionConfig, '|'))
+  if(!std::getline(stream, textConfig, '|')
+    || !std::getline(stream, amplifiedTextConfig, '|')
+    || !std::getline(stream, percentConfig, '|')
+    || !std::getline(stream, ampDirectionConfig, '|'))
   {
     return {false, Section(), "Invalid config line."};
   }
@@ -108,7 +135,7 @@ ParseResult<int> parsePercent(const std::string& percentString)
 
 ParseResult<bool> parseAmpDirection(const std::string& ampDirectionString)
 {
-  if(ampDirectionString.length() != 1 || (ampDirectionString[0] != '-' && ampDirectionString[0] != '+'))
+  if(!isChar(ampDirectionString) || (ampDirectionString[0] != '-' && ampDirectionString[0] != '+'))
   {
     return {false, false, "Amp direction must be either '+' or '-'"};
   }
@@ -116,21 +143,71 @@ ParseResult<bool> parseAmpDirection(const std::string& ampDirectionString)
   return {true, ampDirectionString[0] == '+', ""};
 }
 
+HierarchyParameters readHierarchyConfig(const std::string& fileName)
+{
+    HierarchyParameters hierarchyConfig;
+
+    doForEachFileLine(fileName, [&](const std::string& fileLine) {
+      //lambda
+      auto pos = fileLine.find('=');
+      if (pos == std::string::npos) 
+      {
+        std::cerr << "Config line '" << fileLine << "' invalid.\n";
+        return;
+      }
+
+      std::string key = fileLine.substr(0, pos);
+      std::string value = fileLine.substr(pos + 1);
+
+      if (key == "title") 
+      {
+        hierarchyConfig.title = value;
+      }
+      else if (key == "prefix") 
+      {
+        hierarchyConfig.prefix = value;
+      }
+      else if (key == "line_char")
+      {
+        if(isChar(value)) 
+        {
+          hierarchyConfig.lineChar = value[0];
+        }
+        else
+        {
+          std::cerr << "line_char value too long '" << value << "'\n";
+        }
+      }
+      else 
+      {
+        std::cerr << "Config key '" << key << "' unknown.\n";
+      }
+    });
+
+    return hierarchyConfig;
+}
+
 void displayHierarchy(std::vector<Section>& sections)
 {
+  const HierarchyParameters& hierarchyConfig = getHierarchyConfig();
   std::ostringstream buffer;
-  size_t maxLength = hierarchyTitle.length();
+  size_t maxLength = hierarchyConfig.title.length();
 
   for(const Section& section : sections)
   {
-    std::string text = hierarchyPrefix + section.genDisplay(true, &section);
     //pass pointer to itself to "fake" 2nd guess in a row (for amplified text)
-    std::string amplifiedText = hierarchyPrefix + section.genDisplay(false, &section);
+    std::string textCloser = hierarchyConfig.prefix + section.genDisplay(true, &section);
+    std::string textFurther = hierarchyConfig.prefix + section.genDisplay(false, &section);
 
-    buffer << text << "\n" << amplifiedText << "\n";
-    maxLength = std::max({maxLength, text.length(), amplifiedText.length()});
+    buffer << textCloser << "\n" 
+          << textFurther << "\n";
+    maxLength = std::max({maxLength, textCloser.length(), textFurther.length()});
   }
   
-  std::string line(maxLength, lineSymbol);
-  std::cout << line << "\n" << hierarchyTitle << "\n" << line << "\n" << buffer.str() << line << "\n";
+  std::string line(maxLength, hierarchyConfig.lineChar);
+  std::cout << line << "\n" 
+            << hierarchyConfig.title << "\n" 
+            << line << "\n" 
+            << buffer.str() //hierarchy
+            << line << "\n";
 }

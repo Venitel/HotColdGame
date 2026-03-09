@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(HotColdGame VERSION 1.0 LANGUAGES CXX)
+project(HotColdGame VERSION 1.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -50,5 +50,6 @@ add_custom_target(testAll
     DEPENDS HotColdGame HCGTests
 )
 
-# Copy sections.cfg to the build folder
+# Copy cinfg sections.cfg to the build folder
 configure_file(sections.cfg sections.cfg COPYONLY)
+configure_file(hierarchy.cfg hierarchy.cfg COPYONLY)

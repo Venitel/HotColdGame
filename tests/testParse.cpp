@@ -87,22 +87,40 @@ TEST(ParseAmpDirection, AmpDirectionEmpty)
 }
 
 //We test percent and ampdirection intensively, here we only focus on general line cases
-TEST(ParseConfigLine, ConfigLineValid)
+TEST(ParseSectionConfigLine, ConfigLineValid)
 {
     ParseResult<Section> parse;
     std::string configLine = "COMPLICATED text! 123 SUPER!@#$%/~\\|z|66|+";
-    parse = parseConfigLine(configLine);
+    parse = parseSectionConfigLine(configLine);
     EXPECT_TRUE(parse.success);
     EXPECT_EQ(parse.value.getText(), "COMPLICATED text! 123 SUPER!@#$%/~\\");
     EXPECT_EQ(parse.value.getPercent(), 66);
     EXPECT_TRUE(parse.error.empty());
 }
 
-TEST(ParseConfigLine, ConfigLineInvalid)
+TEST(ParseSectionConfigLine, ConfigLineInvalid)
 {
     ParseResult<Section> parse;
     std::string configLine = "Text|Another text|22"; //missing ampDirection
-    parse = parseConfigLine(configLine);
+    parse = parseSectionConfigLine(configLine);
     EXPECT_FALSE(parse.success);
     EXPECT_FALSE(parse.error.empty());
+}
+
+TEST(Common, CharValid)
+{
+    std::string value = "~";
+    EXPECT_TRUE(isChar(value));
+}
+
+TEST(Common, CharInvalid)
+{
+    std::string value = "XO";
+    EXPECT_FALSE(isChar(value));
+}
+
+TEST(Common, CharEmpty)
+{
+    std::string value = "";
+    EXPECT_FALSE(isChar(value));
 }

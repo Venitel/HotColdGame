@@ -45,7 +45,7 @@ bool checkGuess(Guess currentGuess, Guess lastGuess, int totalNumbers)
   return true;
 }
 
-void playRound(const int targetNumber, const int maxNumber, const std::vector<Section>& allSections)
+void playRound(const int targetNumber, const int maxNumber)
 {
   Guess lastGuess;
   int totalGuesses = 0;
@@ -66,6 +66,7 @@ void playRound(const int targetNumber, const int maxNumber, const std::vector<Se
       }
       else
       {
+        const std::vector<Section>& allSections = getSectionsConfig();
         //temporary Section so we can use overloaded < operator without needing a lambda
         Section tmpSection("", "", currentGuess.getPercentFromTarget(maxNumber), true); 
         auto sectionIt = lower_bound(allSections.begin(), allSections.end(), tmpSection);

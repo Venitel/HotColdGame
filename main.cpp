@@ -7,15 +7,16 @@
 
 int main() 
 {
-  bool restart = false;
-  std::vector<Section> allSections;
   try
   {
-    allSections = initSections();
+    //force early (static) config loading for fast fail
+    getSectionsConfig();
+    getHierarchyConfig();
   }
   catch(const std::exception& exc)
   {
-      std::cerr << "Error: " << exc.what();
+      std::cerr << "Error: " << exc.what() << ". Press any key to close.";
+      getchar();
       return 1;
   }
 
@@ -27,7 +28,7 @@ int main()
   {
     int maxNumber = getDifficulty();
     std::uniform_int_distribution<> dist(1, maxNumber);
-    playRound(dist(rng), maxNumber, allSections);
+    playRound(dist(rng), maxNumber);
 
     std::cout << "Play again? (Y/N): ";
   } while (toupper(std::cin.get()) == 'Y');
