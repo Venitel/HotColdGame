@@ -1,12 +1,13 @@
 # HotColdGame – C++ Number Guessing Game
-A simple CLI game written in C++11.  Player guesses the number and receives a feedback (cold, hot, hotter) based on a configurable [sections.cfg](sections.cfg) file (details and how-to inside the file).
+A simple CLI game written in C++11.  Player guesses the number and receives a feedback (cold, hot, hotter) based on a configurable [sections.cfg](sections.cfg) file (details and how-to inside the file). 
+On start-up the configured sections are displayed according to [hierarchy.cfg](hierarchy.cfg) configuration.
 
 This project has been made purely for fun and practice and is probably slightly overengineered for the basic gameplay it provides.
 
 ## Build
 
 ### Using CMake Presets 
-Creates a /build folder with .exe inside and copies the [sections.cfg](section.cfg).
+Creates a /build folder with .exe inside and copies the [sections.cfg](section.cfg) and [hierarchy.cfg](hierarchy.cfg).
 This will also run unit tests during build.
 ```bash
 cmake --preset default
